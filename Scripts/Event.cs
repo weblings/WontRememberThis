@@ -10,7 +10,7 @@ public class Event{
 	public int importance; //importance of event (need to figure out ordering)
 	public int recorded; //quality of recording of event. Multiply by 25% in genetic alg for protction value
 
-	//Constructor
+	//Constructor -----------------------------------------------------------------------------------------------------------------------
 	public Event(List<int> _participants, List<int> _date, List<int> _consequences, string _name, int _importance, int _recorded){
 		participants = _participants;
 		date = _date;
@@ -20,6 +20,7 @@ public class Event{
 		recorded = _recorded;
 	}
 
+	//functions -------------------------------------------------------------------------------------------------------------------------
 	public string toString(){
 		string output = "{Event: " + name + ", Date: " + date [1] + " " + date [2] + ", " + date [0] + " Importance: " + importance;
 		output+= ", Participants/Consequences: ";

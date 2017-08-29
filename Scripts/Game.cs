@@ -6,20 +6,32 @@ public class Game : MonoBehaviour{
 
 	public List<Faction> factions;
 	public Timeline t;
-	//SortedDictionary<string,City> cities
+	SortedDictionary<string,City> cities;
 
 	// Use this for initialization
 	void Start () {
+
+		//basically a constructor
 		t = RandomTimeline (5);
 		factions = new List<Faction> ();
+		cities = new SortedDictionary<string, City> ();
+
+		//initilizing some testing values
 		for (int i = 0; i < 5; i++) {
-			Faction f = new Faction("The "+RandomString(Random.Range(5,8)),t);
+			string factionName = "The " + RandomString (Random.Range (5, 8));
+			string newCityName = RandomString (Random.Range (5, 13));
+			City NewCity = new City (newCityName, factionName, .5f, 150);
+			cities.Add (newCityName, NewCity);
+			Faction f = new Faction(factionName,newCityName, t);
 			factions.Add (f);
 		}
 		for (int i = 0; i < factions.Count; i++) {
 			print(factions [i].toString ());
 		}
 	}
+
+	//Real functions ----------------------------------------------------------------------------------------------
+
 
 	//Randomizer functions ---------------------------------------------------------------------------------------
 	public Event RandomEvent(){
