@@ -5,7 +5,7 @@ using UnityEngine;
 public class Faction {
 
 	public string name;
-	Timeline t;
+	public Timeline t;
 	float influence;
 	List<string> cities;
 	SortedDictionary<string,bool> techTree;
