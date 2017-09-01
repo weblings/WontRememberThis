@@ -26,7 +26,7 @@ public class Faction {
 
 	public Faction(string _name, Timeline _t){
 		name = _name;
-		t = _t;
+		t = new Timeline(_t.timeline);	//Was having pointer issues
 		influence = 0.1f;
 		cities = new List<string> ();
 		//TODO: Length of tech tree
@@ -38,7 +38,7 @@ public class Faction {
 
 	public Faction(string _name, string startingCity, Timeline _t){
 		name = _name;
-		t = _t;
+		t = new Timeline(_t.timeline);	//Was having pointer issues
 		influence = 0.1f;
 		cities = new List<string> ();
 		//TODO: Length of tech tree
@@ -51,7 +51,7 @@ public class Faction {
 
 	public Faction(string _name, List<string> _cities, Timeline _t){
 		name = _name;
-		t = _t;
+		t = new Timeline(_t.timeline);	//Was having pointer issues
 		influence = 0.1f;
 		cities = new List<string> ();
 		//TODO: Length of tech tree

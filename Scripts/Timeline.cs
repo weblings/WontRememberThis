@@ -12,7 +12,7 @@ public class Timeline{
 	}
 
 	public Timeline(List<Event> _timeline){
-		timeline = _timeline;
+		timeline = new List<Event>( _timeline.ToArray()); //new List<Event> (_timeline); caused all timelines to ref eachother
 	}
 
 	//functions --------------------------------------------------
