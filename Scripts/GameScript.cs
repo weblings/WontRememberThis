@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Game : MonoBehaviour{
+public class GameScript : MonoBehaviour{
 
 	public List<Faction> factions;
 	public List<string> factionNames; //probably will get rid of this after testing
@@ -13,7 +13,7 @@ public class Game : MonoBehaviour{
 
 	// Use this for initialization
 	void Start () {
-		month = 1;
+		month = 0;
 		year = 0;
 
 		//Initializing faction names so randomized timelines have real factions
@@ -36,7 +36,7 @@ public class Game : MonoBehaviour{
 			Faction f = new Faction(factionName,newCityName,t);
 			factions.Add (f);
 		}
-		InvokeRepeating ("Time", 0f, 2f); //2f might be good for normal gamerate
+		InvokeRepeating ("Time", 0f, 0.5f); //2f might be good for normal gamerate
 	}
 
 
