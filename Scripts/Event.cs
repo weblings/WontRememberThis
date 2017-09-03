@@ -8,9 +8,9 @@ public class Event{
 	public List<int> consequences; //represent buffs/debuffs for participants
 	public string name; //name of event
 	public int importance; //importance of event (need to figure out ordering)
-	public List<string> records; //location of recording. Multiply by 25% in genetic alg for protction value
+	public List<string> records; //location of recording. More records -> better protection of event
 	public int type; //0 = historical, 1 = mythical
-	public List<string> changes;//List<List<string>> changes; //if more than 3 changes -> mythical
+	public List<string> changes; //if more than 3 changes -> mythical
 
 	//Constructor -----------------------------------------------------------------------------------------------------------------------
 	public Event(List<string> _participants, List<int> _date, List<int> _consequences, string _name, int _importance){
@@ -21,7 +21,7 @@ public class Event{
 		importance = _importance;
 		records = new List<string> ();
 		type = 0; //default will be historical
-		changes = new List<string>();//List<List<string>>();
+		changes = new List<string>();
 	}
 
 	public Event(List<string> _participants, List<int> _date, List<int> _consequences, string _name, int _importance, int _type){

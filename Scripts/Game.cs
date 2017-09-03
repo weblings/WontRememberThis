@@ -27,17 +27,13 @@ public class Game : MonoBehaviour{
 
 		//initilizing some testing values
 		for (int i = 0; i < 5; i++) {
-			string factionName = factionNames [i];//"The " + RandomString (Random.Range (5, 8));
+			string factionName = factionNames [i];
 			string newCityName = RandomString (Random.Range (5, 13));
 			City NewCity = new City (newCityName, factionName, .5f, 150);
 			cities.Add (newCityName, NewCity);
 			Faction f = new Faction(factionName,newCityName,t);
 			//mutate (f.t);
 			factions.Add (f);
-		}
-		for (int i = 0; i < factions.Count; i++) {
-			//mutate (factions[i].t.timeline);
-			//print(factions[i].t.toString());
 		}
 		for (int i = 0; i < factions.Count; i++) {
 			mutate (factions[i].t.timeline);
@@ -56,16 +52,16 @@ public class Game : MonoBehaviour{
 		List<int> cons = new List<int>();
 		for (int i = 0; i < partsMax; i++) {
 			string newPart = factionNames [Random.Range (0, factionNames.Count)];
+
 			//Checks if it is going to add a faction already in the list, if so: break
 			if (parts.BinarySearch (newPart) >= 0)	break; 
-			parts.Add (newPart);//parts.Add (RandomString(9));
+			parts.Add (newPart);
 			cons.Add(Random.Range(-3,3));
 		}
 		List<int> date = new List<int> (new int[]{ Random.Range (0, 1500), Random.Range (1, 12), Random.Range (1, 30) });
 		string name = "Battle of the " + RandomString (Random.Range (3, 8));
 		int importance = Random.Range (0, 5);
-		//int numCopies = Random.Range (0, 4);
-		Event rando = new Event (parts, date, cons, name, importance); //, numCopies);
+		Event rando = new Event (parts, date, cons, name, importance); 
 		return rando;
 	}
 
@@ -102,7 +98,6 @@ public class Game : MonoBehaviour{
 		//determining which data to mutate
 		if (Random.Range(0,4) > t[index].records.Count){
 			data = Random.Range (0, 5);
-			//print (index + ", " + data);
 		} else { //the data's recording has protected it
 			print("protected");
 			return;
@@ -174,7 +169,7 @@ public class Game : MonoBehaviour{
 			t [index].recordChange ("Time", "consequences", change, newAmount.ToString());
 			t[index].consequences [change] = newAmount;
 		
-		} else if (data == 3) { print (index + " name");//name SEEMS BROKEN
+		} else if (data == 3) { print (index + " name");//name
 
 			//Needs last word to be the one it will edit
 			int spaceIndex = t[index].name.LastIndexOf(' ');
