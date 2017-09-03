@@ -5,12 +5,19 @@ using UnityEngine;
 public class Game : MonoBehaviour{
 
 	public List<Faction> factions;
+	public List<string> factionNames; //probably will get rid of this after testing
 	//public Timeline t;
 	SortedDictionary<string,City> cities;
 	public int year; //current year
 
 	// Use this for initialization
 	void Start () {
+
+		//Initializing faction names so randomized timelines have real factions
+		for (int i = 0; i < 5; i++) {
+			string factionName = "The " + RandomString (Random.Range (5, 8));
+			factionNames.Add (factionName);
+		}
 
 		//basically a constructor
 		Timeline t = RandomTimeline (5);
@@ -20,7 +27,7 @@ public class Game : MonoBehaviour{
 
 		//initilizing some testing values
 		for (int i = 0; i < 5; i++) {
-			string factionName = "The " + RandomString (Random.Range (5, 8));
+			string factionName = factionNames [i];//"The " + RandomString (Random.Range (5, 8));
 			string newCityName = RandomString (Random.Range (5, 13));
 			City NewCity = new City (newCityName, factionName, .5f, 150);
 			cities.Add (newCityName, NewCity);
@@ -30,7 +37,7 @@ public class Game : MonoBehaviour{
 		}
 		for (int i = 0; i < factions.Count; i++) {
 			//mutate (factions[i].t.timeline);
-			print(factions[i].t.toString());
+			//print(factions[i].t.toString());
 		}
 		for (int i = 0; i < factions.Count; i++) {
 			mutate (factions[i].t.timeline);
@@ -48,7 +55,10 @@ public class Game : MonoBehaviour{
 		List<string> parts = new List<string>();
 		List<int> cons = new List<int>();
 		for (int i = 0; i < partsMax; i++) {
-			parts.Add (RandomString(9));
+			string newPart = factionNames [Random.Range (0, factionNames.Count)];
+			//Checks if it is going to add a faction already in the list, if so: break
+			if (parts.BinarySearch (newPart) >= 0)	break; 
+			parts.Add (newPart);//parts.Add (RandomString(9));
 			cons.Add(Random.Range(-3,3));
 		}
 		List<int> date = new List<int> (new int[]{ Random.Range (0, 1500), Random.Range (1, 12), Random.Range (1, 30) });
@@ -106,33 +116,48 @@ public class Game : MonoBehaviour{
 			print("participants: "+t[index].participants.Count+" , "+change);
 			int randFact = Random.Range (0, factions.Count - 1);
 			print("factions: "+factions.Count+" , "+randFact);
+			string partChange = factions [randFact].name;
 
+			//Log the participants getting changed
+			t[index].recordChange ("Time", "participants", change, partChange);
 			t[index].participants [change] = factions[randFact].name;
-			//t.timeline [index].participants [change] = factions[Random.Range (0, factions.Count-1)].name;
 		
 		} else if (data == 1) { print (index + " date");//date
 			int change = Random.Range(0,100);
 
 			if (change <= 36) { //0-36 are days
 				change *= (5 / 6); //lower it to within 0-30
+				if(change == 0) change = 1; //There is no 0th day of a month
+				string newDate = t[index].getMonth(t[index].date [1]) + " " + change + ", " + t[index].date [0];//t[index].date [1] + " " + t[index].date [2] + ", " + t[index].date [0];
+				t [index].recordChange ("Time", "date", newDate);
 				t [index].date [2] = change;
 			} else if (change >= 37 && change <= 72) { //37-72 are months
 				change /= 3; //lower it to 1-12
+				string newDate = t[index].getMonth(change) + " " + t[index].date [2] + ", " + t[index].date [0];
+				t [index].recordChange ("Time", "date", newDate);
 				t[index].date [1] = change;
 			} else if(change >= 73 && change <= 86){ //73-86 subtracts from years
 				change -= 72; //make change between 0-14
 				change *= -2; //make change between -28 and 0
 				if (t[index].date [0] + change < 0) {
+					string newDate = t[index].getMonth(t[index].date [1]) + " " + t[index].date [2] + ", 0";
+					t [index].recordChange ("Time", "date", newDate);
 					t [index].date [0] = 0;
-				} else {	
+				} else {
+					string newDate = t[index].getMonth(t[index].date [1])  + " " + t[index].date [2] + ", " + change;
+					t [index].recordChange ("Time", "date", newDate);	
 					t[index].date [0] += change;
 				}
 			} else { //87-100
 				change -= 86; //makes change between 0-14
 				change *= 2; //makes change between 0-28
 				if (t [index].date [0] + change > year) {
+					string newDate = t[index].getMonth(t[index].date [1])  + " " + t[index].date [2] + ", " + year;
+					t [index].recordChange ("Time", "date", newDate);
 					t[index].date [0] = year;
 				} else {
+					string newDate = t[index].getMonth(t[index].date [1])  + " " + t[index].date [2] + ", " + change;
+					t [index].recordChange ("Time", "date", newDate);
 					t[index].date [0] += change;
 				}
 			}
@@ -145,14 +170,18 @@ public class Game : MonoBehaviour{
 			if(Random.Range(0,1) == 1){
 				amount = -1;
 			}
-			t[index].consequences [change] += amount;
+			int newAmount = t [index].consequences [change] + amount;
+			t [index].recordChange ("Time", "consequences", change, newAmount.ToString());
+			t[index].consequences [change] = newAmount;
 		
 		} else if (data == 3) { print (index + " name");//name SEEMS BROKEN
 
 			//Needs last word to be the one it will edit
 			int spaceIndex = t[index].name.LastIndexOf(' ');
-			string newName = t[index].name.Substring(0,spaceIndex);
+			string newName = t[index].name.Substring(0,spaceIndex+1);
 			newName += RandomString (Random.Range (5, 10));
+
+			t [index].recordChange ("Time", "name", newName); 
 
 		} else if (data == 4) { print (index + " importance");//importance
 
@@ -160,10 +189,14 @@ public class Game : MonoBehaviour{
 			if(Random.Range(0,1) == 1){
 				amount = -1;
 			}
+
+			int newImportance = t [index].importance + amount;
+			t [index].recordChange ("Time", "importance", newImportance.ToString());
+
 			t[index].importance += amount;
 
 		} else if (data == 5) { print (index + " recorded");//recorded
-			t[index].removeRandomRecording();
+			t[index].removeRandomRecording("Time"); //change recording is handled inside this function
 
 		}
 
