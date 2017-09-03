@@ -9,9 +9,12 @@ public class Game : MonoBehaviour{
 	//public Timeline t;
 	SortedDictionary<string,City> cities;
 	public int year; //current year
+	public int month;
 
 	// Use this for initialization
 	void Start () {
+		month = 1;
+		year = 0;
 
 		//Initializing faction names so randomized timelines have real factions
 		for (int i = 0; i < 5; i++) {
@@ -23,7 +26,6 @@ public class Game : MonoBehaviour{
 		Timeline t = RandomTimeline (5);
 		factions = new List<Faction> ();
 		cities = new SortedDictionary<string, City> ();
-		year = 0;
 
 		//initilizing some testing values
 		for (int i = 0; i < 5; i++) {
@@ -32,18 +34,40 @@ public class Game : MonoBehaviour{
 			City NewCity = new City (newCityName, factionName, .5f, 150);
 			cities.Add (newCityName, NewCity);
 			Faction f = new Faction(factionName,newCityName,t);
-			//mutate (f.t);
 			factions.Add (f);
 		}
-		for (int i = 0; i < factions.Count; i++) {
-			mutate (factions[i].t.timeline);
-			print(factions[i].t.toString());
-		}
-
+		InvokeRepeating ("Time", 0f, 2f); //2f might be good for normal gamerate
 	}
 
-	//Real functions ----------------------------------------------------------------------------------------------
 
+	void Time(){
+
+		//handle months
+		if (month < 12)	month++;
+		else month = 1;
+
+		//possibility of a player's timeline getting hit each month
+		if (Random.Range (0, 4) == 0) {
+			int index = Random.Range (0, factions.Count);
+			mutate (factions [index].t.timeline);
+			print (factions [index].name + " hit!");
+			print (factions [index].t.toString ());
+		}
+
+		//handle years
+		if (month == 1) {
+			//possibility of all player's timelines getting hit each year
+			if(Random.Range(0,2) == 0){
+				print ("ALL FACTIONS HIT!");
+				for (int i = 0; i < factions.Count; i++) {
+					print (factions [i].name + " hit!");
+					mutate (factions[i].t.timeline);
+					print(factions[i].t.toString());
+				}
+			}
+			year++;
+		}
+	}
 
 	//Randomizer functions ---------------------------------------------------------------------------------------
 	public Event RandomEvent(){
@@ -106,11 +130,9 @@ public class Game : MonoBehaviour{
 		if (data == 0) { print (index + " participants");//participants 
 
 			int change = Random.Range(0, t[index].participants.Count-1);
+
 			//Change participants to a random faction
-			print("timeline: "+t.Count+" , "+index);
-			print("participants: "+t[index].participants.Count+" , "+change);
 			int randFact = Random.Range (0, factions.Count - 1);
-			print("factions: "+factions.Count+" , "+randFact);
 			string partChange = factions [randFact].name;
 
 			//Log the participants getting changed
