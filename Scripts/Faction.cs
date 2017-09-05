@@ -6,18 +6,19 @@ public class Faction : Helper {
 
 	public string name;
 	public Timeline t;
-	public float influence;
+	public float AvgPerception;
 	public List<string> cities;
 	public SortedDictionary<string,bool> techTree;
 	public SortedDictionary<string, int> resource;
 	public SortedDictionary<string,float> knownFactions; //stores factionsKnown and the positive/negative feeling this faction feels towards them
+	public SortedDictionary<string,bool> discoveredFactions; //whether this faction has encountered other faction themselves
+	public SortedDictionary<string, float> factionsPerceptions; //record of what other factions think of this faction
 	float mythValue; //how much myths are worth to this faction
 
 	//constructors ---------------------------------------------------
-	public Faction(string _name){
+	public Faction(string _name, List<string> factionNames){
 		name = _name;
 		t = new Timeline ();
-		influence = 0.1f;
 		cities = new List<string> ();
 		//TODO: Length of tech tree
 		createTechTree();
@@ -27,12 +28,14 @@ public class Faction : Helper {
 		knownFactions = new SortedDictionary<string, float> ();
 		knownFactions.Add (name, 5f); //abritrarily starting with 5 (subject to change)
 		mythValue = .7f;
+		discoveredFactions = new SortedDictionary<string, bool> ();
+		setupDiscoveredFactions (factionNames);
+		factionsPerceptions = new SortedDictionary<string, float> ();
 	}
 
-	public Faction(string _name, Timeline _t){
+	public Faction(string _name, Timeline _t, List<string> factionNames){
 		name = _name;
 		t = new Timeline(_t.timeline);	//Was having pointer issues
-		influence = 0.1f;
 		cities = new List<string> ();
 		//TODO: Length of tech tree
 		createTechTree();
@@ -42,12 +45,14 @@ public class Faction : Helper {
 		knownFactions = new SortedDictionary<string, float> ();
 		knownFactions.Add (name, 5f); //abritrarily starting with 5 (subject to change)
 		mythValue = .7f;
+		discoveredFactions = new SortedDictionary<string, bool> ();
+		setupDiscoveredFactions (factionNames);
+		factionsPerceptions = new SortedDictionary<string, float> ();
 	}
 
-	public Faction(string _name, string startingCity, Timeline _t){
+	public Faction(string _name, string startingCity, Timeline _t, List<string> factionNames){
 		name = _name;
 		t = new Timeline(_t.timeline);	//Was having pointer issues
-		influence = 0.1f;
 		cities = new List<string> ();
 		//TODO: Length of tech tree
 		createTechTree();
@@ -58,12 +63,14 @@ public class Faction : Helper {
 		knownFactions = new SortedDictionary<string, float> ();
 		knownFactions.Add (name, 5f); //abritrarily starting with 5 (subject to change)
 		mythValue = .7f;
+		discoveredFactions = new SortedDictionary<string, bool> ();
+		setupDiscoveredFactions (factionNames);
+		factionsPerceptions = new SortedDictionary<string, float> ();
 	}
 
-	public Faction(string _name, List<string> _cities, Timeline _t){
+	public Faction(string _name, List<string> _cities, Timeline _t, List<string> factionNames){
 		name = _name;
 		t = new Timeline(_t.timeline);	//Was having pointer issues
-		influence = 0.1f;
 		cities = new List<string> ();
 		//TODO: Length of tech tree
 		createTechTree();
@@ -73,11 +80,14 @@ public class Faction : Helper {
 		knownFactions = new SortedDictionary<string, float> ();
 		knownFactions.Add (name, 5f); //abritrarily starting with 5 (subject to change)
 		mythValue = .7f;
+		discoveredFactions = new SortedDictionary<string, bool> ();
+		setupDiscoveredFactions (factionNames);
+		factionsPerceptions = new SortedDictionary<string, float> ();
 	}
 
 	//print functions ------------------------------------------------------
 	public string toString(){
-		string output = "(Name: "+name+", Influence: "+influence+" ,";
+		string output = "(Name: "+name+", AvgPerception: "+AvgPerception+" ,";
 		output += t.toString () + "\nCities: ";
 		for (int i = 0; i < cities.Count; i++) {
 			output += cities [i];
@@ -86,6 +96,7 @@ public class Faction : Helper {
 		output += "\nTech Tree: " + SDtoString<string,bool>(techTree);
 		output += "\nResources: " + SDtoString<string,int>(resource);
 		output += "\nKnown Factions: " + SDtoString<string,float>(knownFactions);
+		output += "\nDiscovered Factions: " + SDtoString<string,bool>(discoveredFactions);
 		return output;
 	}
 
@@ -97,9 +108,44 @@ public class Faction : Helper {
 			techTree.Add (techs [i], false);
 		}
 	}
+		
+	//Currently makes a single faction known at the beginning
+	public void setupDiscoveredFactions(List<string> factions){
+
+		bool chosen = false;
+		int index = Random.Range (0, factions.Count);
+
+		//Ensures the random index is actually another faction
+		while (factions [index] == name) {
+			index = Random.Range (0, factions.Count);
+		}
+
+		for (int i = 0; i < factions.Count; i++) {
+
+			if (index == i)	chosen = true;
+			else chosen = false;
+
+			if (factions [i] != name) {
+				discoveredFactions.Add (factions [i], chosen);
+			}
+		}
+	}
+
+	//updates AvgPerception with how other factions feel about that faction
+	public void updateAvgPerception(){
+		int divisor = 0;
+		AvgPerception = 0; //reset AvgPerception
+		foreach (KeyValuePair<string, float> fp in factionsPerceptions) {
+			if (discoveredFactions [fp.Key]) {
+				AvgPerception += fp.Value;
+				divisor++;
+			}
+		}
+		AvgPerception /= divisor;
+	}
 
 	//returns Affinity for a faction from that event
-	public float CalculateAffinity(int importance, int eventType){
+	public float CalculateYourAffinities(int importance, int eventType){
 		if (eventType == 0) {
 			return importance;
 		} else { // if (eventType == 1) { //in case more than two types exist later
@@ -117,10 +163,10 @@ public class Faction : Helper {
 			for(int j=0; j < t.timeline[i].participants.Count; j++){ //Step through participants in an event
 				if (nkf.ContainsKey (t.timeline [i].participants [j])) { //Check if participant is already in nkf
 					float value = nkf [t.timeline [i].participants [j]]; //get value stored in nkf mapped to that participant
-					value += CalculateAffinity (t.timeline [i].importance, t.timeline [i].consequences [j]);
+					value += CalculateYourAffinities (t.timeline [i].importance, t.timeline [i].consequences [j]);
 					nkf[t.timeline [i].participants [j]] += value;
 				} else {
-					float value = CalculateAffinity(t.timeline[i].importance, t.timeline[i].consequences[j]);
+					float value = CalculateYourAffinities(t.timeline[i].importance, t.timeline[i].consequences[j]);
 					nkf.Add (t.timeline [i].participants [j], value);
 				}
 			}

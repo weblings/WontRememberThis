@@ -33,16 +33,21 @@ public class GameScript : MonoBehaviour{
 			string newCityName = RandomString (Random.Range (5, 13));
 			City NewCity = new City (newCityName, factionName, .5f, 150);
 			cities.Add (newCityName, NewCity);
-			Faction f = new Faction(factionName,newCityName,t);
+			Faction f = new Faction(factionName,newCityName,t,factionNames);
 			factions.Add (f);
 			f.updateAllAffinities ();
 			print(f.toString ());
 		}
 
+		setupFactionsPerceptions ();
+		for (int i = 0; i < factions.Count; i++) {
+			print(factions [i].SDtoString<string,float> (factions [i].factionsPerceptions));
+		}
+
 		InvokeRepeating ("Time", 0f, 2f); //2f might be good for normal gamerate
 	}
 
-
+	//make time move forward, mutates as it progresses
 	void Time(){
 
 		//handle months
@@ -220,6 +225,28 @@ public class GameScript : MonoBehaviour{
 
 		}
 
+	}
+
+	//faction perceptions
+	void setupFactionsPerceptions(){
+		//Need a dictionary to keep this runtime down TODO: replace List<Faction> factions with this
+		SortedDictionary<string,Faction> f = new SortedDictionary<string, Faction> ();
+
+		for (int i = 0; i < factions.Count; i++) {
+			f.Add (factions [i].name, factions [i]);
+		}
+
+		for (int i = 0; i < factions.Count; i++){
+			foreach (KeyValuePair<string, bool> k in factions[i].discoveredFactions){
+				//print (i + ". " + factions [i].name + ": " + k.Key); Keeping this because there is a weird null ptr error very occasionally
+				factions [i].factionsPerceptions.Add ( k.Key, f[k.Key].knownFactions [factions[i].name]);
+			}
+		}
+
+		for (int i = 0; i < factions.Count; i++) {
+			factions [i].updateAvgPerception ();
+			print (factions[i].name + ": " + factions [i].AvgPerception);
+		}
 	}
 
 }
