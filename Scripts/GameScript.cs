@@ -35,8 +35,11 @@ public class GameScript : MonoBehaviour{
 			cities.Add (newCityName, NewCity);
 			Faction f = new Faction(factionName,newCityName,t);
 			factions.Add (f);
+			f.updateAllAffinities ();
+			print(f.toString ());
 		}
-		InvokeRepeating ("Time", 0f, 0.5f); //2f might be good for normal gamerate
+
+		InvokeRepeating ("Time", 0f, 2f); //2f might be good for normal gamerate
 	}
 
 
@@ -123,11 +126,11 @@ public class GameScript : MonoBehaviour{
 		if (Random.Range(0,4) > t[index].records.Count){
 			data = Random.Range (0, 5);
 		} else { //the data's recording has protected it
-			print("protected");
+			//print("protected");
 			return;
 		}
 
-		if (data == 0) { print (index + " participants");//participants 
+		if (data == 0) { //print (index + " participants");//participants 
 
 			int change = Random.Range(0, t[index].participants.Count-1);
 
@@ -139,7 +142,7 @@ public class GameScript : MonoBehaviour{
 			t[index].recordChange ("Time", "participants", change, partChange);
 			t[index].participants [change] = factions[randFact].name;
 		
-		} else if (data == 1) { print (index + " date");//date
+		} else if (data == 1) { //print (index + " date");//date
 			int change = Random.Range(0,100);
 
 			if (change <= 36) { //0-36 are days
@@ -179,7 +182,7 @@ public class GameScript : MonoBehaviour{
 				}
 			}
 				
-		} else if (data == 2) { print (index + " consequences");//consequences
+		} else if (data == 2) { //print (index + " consequences");//consequences
 			
 			int length = t[index].consequences.Count;
 			int change = Random.Range (0, length);
@@ -191,7 +194,7 @@ public class GameScript : MonoBehaviour{
 			t [index].recordChange ("Time", "consequences", change, newAmount.ToString());
 			t[index].consequences [change] = newAmount;
 		
-		} else if (data == 3) { print (index + " name");//name
+		} else if (data == 3) { //print (index + " name");//name
 
 			//Needs last word to be the one it will edit
 			int spaceIndex = t[index].name.LastIndexOf(' ');
@@ -200,7 +203,7 @@ public class GameScript : MonoBehaviour{
 
 			t [index].recordChange ("Time", "name", newName); 
 
-		} else if (data == 4) { print (index + " importance");//importance
+		} else if (data == 4) { //print (index + " importance");//importance
 
 			int amount = 1;
 			if(Random.Range(0,1) == 1){
@@ -212,7 +215,7 @@ public class GameScript : MonoBehaviour{
 
 			t[index].importance += amount;
 
-		} else if (data == 5) { print (index + " recorded");//recorded
+		} else if (data == 5) { //print (index + " recorded");//recorded
 			t[index].removeRandomRecording("Time"); //change recording is handled inside this function
 
 		}
