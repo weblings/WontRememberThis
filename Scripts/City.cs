@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class City{
+public class City : Helper{
 
 	public string name;
 	public List<string> neighbors;
