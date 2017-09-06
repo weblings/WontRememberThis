@@ -48,7 +48,7 @@ public class GameScript : MonoBehaviour{
 			//print(factions[i].SDListValuetoString<string,int>(factions[i].eventListing));
 		//`}
 		int index = Random.Range (0, factions.Count);
-		mutate (factions [index].t.timeline);
+		mutate (factions [index]);
 		InvokeRepeating ("Time", 0f, 2f); //2f might be good for normal gamerate
 	}
 
@@ -62,9 +62,10 @@ public class GameScript : MonoBehaviour{
 		//possibility of a player's timeline getting hit each month
 		if (Random.Range (0, 4) == 0) {
 			int index = Random.Range (0, factions.Count);
-			mutate (factions [index].t.timeline);
+			mutate (factions [index]);
 			print (factions [index].name + " hit!");
-			print (factions [index].t.toString ());
+			//print (factions [index].t.toString ());
+			print(factions[index].name+"\'s knownFactions: "+h.SDtoString<string,float>(factions[index].knownFactions));
 		}
 
 		//handle years
@@ -74,7 +75,7 @@ public class GameScript : MonoBehaviour{
 				print ("ALL FACTIONS HIT!");
 				for (int i = 0; i < factions.Count; i++) {
 					print (factions [i].name + " hit!");
-					mutate (factions[i].t.timeline);
+					mutate (factions[i]);
 					print(factions[i].t.toString());
 				}
 			}
@@ -139,12 +140,12 @@ public class GameScript : MonoBehaviour{
 	//have a second one that attaches identity of deliberate changes
 	//starting with pure random
 	//Add change storing
-	public void mutate(List<Event> t){
-		int index = Random.Range (0, t.Count-1);
+	public void mutate(Faction f){
+		int index = Random.Range (0, f.t.timeline.Count-1);
 		int data;
 
 		//determining which data to mutate
-		if (Random.Range(0,4) > t[index].records.Count){
+		if (Random.Range(0,4) > f.t.timeline[index].records.Count){
 			data = Random.Range (0, 5);
 		} else { //the data's recording has protected it
 			//print("protected");
@@ -153,9 +154,9 @@ public class GameScript : MonoBehaviour{
 
 		if (data == 0) { //print (index + " participants");//participants 
 
-			int change = Random.Range(0, t[index].participants.Count);
-			string[] part = new string[t[index].participants.Count]; //make an array, the length of participants
-			t [index].participants.Keys.CopyTo (part, 0); //put the keys in this array
+			int change = Random.Range(0, f.t.timeline[index].participants.Count);
+			string[] part = new string[f.t.timeline[index].participants.Count]; //make an array, the length of participants
+			f.t.timeline[index].participants.Keys.CopyTo (part, 0); //put the keys in this array
 			string oldPart = part[change];
 
 			//Change participants to a random faction
@@ -163,7 +164,23 @@ public class GameScript : MonoBehaviour{
 			string partChange = factions [randFact].name;
 
 			//Log the participants getting changed
-			t[index].recordChange ("Time", "participants", partChange, oldPart);
+			f.t.timeline[index].recordChange ("Time", "participants", partChange, oldPart);
+
+			//Change them
+			int value = f.t.timeline[index].participants [oldPart];
+			f.removeParticipant (oldPart, index);
+			f.t.timeline[index].participants.Remove (oldPart);
+
+			if(f.t.timeline[index].participants.ContainsKey(partChange)){
+				f.t.timeline[index].participants[partChange] = value;
+			}else{
+				f.t.timeline[index].participants.Add (partChange, value);
+				f.addParticipant (partChange, index);
+			}
+
+			//Update faction's affinity
+			f.updateFactionAffinity(oldPart);
+			f.updateFactionAffinity (partChange);
 		
 		} else if (data == 1) { //print (index + " date");//date
 			int change = Random.Range(0,100);
@@ -171,52 +188,52 @@ public class GameScript : MonoBehaviour{
 			if (change <= 36) { //0-36 are days
 				change *= (5 / 6); //lower it to within 0-30
 				if(change == 0) change = 1; //There is no 0th day of a month
-				string newDate = t[index].getMonth(t[index].date [1]) + " " + change + ", " + t[index].date [0];//t[index].date [1] + " " + t[index].date [2] + ", " + t[index].date [0];
-				t [index].recordChange ("Time", "date", newDate);
-				t [index].date [2] = change;
+				string newDate = f.t.timeline[index].getMonth(f.t.timeline[index].date [1]) + " " + change + ", " + f.t.timeline[index].date [0];//t[index].date [1] + " " + t[index].date [2] + ", " + t[index].date [0];
+				f.t.timeline[index].recordChange ("Time", "date", newDate);
+				f.t.timeline[index].date [2] = change;
 			} else if (change >= 37 && change <= 72) { //37-72 are months
 				change /= 3; //lower it to 1-12
-				string newDate = t[index].getMonth(change) + " " + t[index].date [2] + ", " + t[index].date [0];
-				t [index].recordChange ("Time", "date", newDate);
-				t[index].date [1] = change;
+				string newDate = f.t.timeline[index].getMonth(change) + " " + f.t.timeline[index].date [2] + ", " + f.t.timeline[index].date [0];
+				f.t.timeline[index].recordChange ("Time", "date", newDate);
+				f.t.timeline[index].date [1] = change;
 			} else if(change >= 73 && change <= 86){ //73-86 subtracts from years
 				change -= 72; //make change between 0-14
 				change *= -2; //make change between -28 and 0
-				if (t[index].date [0] + change < 0) {
-					string newDate = t[index].getMonth(t[index].date [1]) + " " + t[index].date [2] + ", 0";
-					t [index].recordChange ("Time", "date", newDate);
-					t [index].date [0] = 0;
+				if (f.t.timeline[index].date [0] + change < 0) {
+					string newDate = f.t.timeline[index].getMonth(f.t.timeline[index].date [1]) + " " + f.t.timeline[index].date [2] + ", 0";
+					f.t.timeline[index].recordChange ("Time", "date", newDate);
+					f.t.timeline[index].date [0] = 0;
 				} else {
-					string newDate = t[index].getMonth(t[index].date [1])  + " " + t[index].date [2] + ", " + change;
-					t [index].recordChange ("Time", "date", newDate);	
-					t[index].date [0] += change;
+					string newDate = f.t.timeline[index].getMonth(f.t.timeline[index].date [1])  + " " + f.t.timeline[index].date [2] + ", " + change;
+					f.t.timeline[index].recordChange ("Time", "date", newDate);	
+					f.t.timeline[index].date [0] += change;
 				}
 			} else { //87-100
 				change -= 86; //makes change between 0-14
 				change *= 2; //makes change between 0-28
-				if (t [index].date [0] + change > year) {
-					string newDate = t[index].getMonth(t[index].date [1])  + " " + t[index].date [2] + ", " + year;
-					t [index].recordChange ("Time", "date", newDate);
-					t[index].date [0] = year;
+				if (f.t.timeline[index].date [0] + change > year) {
+					string newDate = f.t.timeline[index].getMonth(f.t.timeline[index].date [1])  + " " + f.t.timeline[index].date [2] + ", " + year;
+					f.t.timeline[index].recordChange ("Time", "date", newDate);
+					f.t.timeline[index].date [0] = year;
 				} else {
-					string newDate = t[index].getMonth(t[index].date [1])  + " " + t[index].date [2] + ", " + change;
-					t [index].recordChange ("Time", "date", newDate);
-					t[index].date [0] += change;
+					string newDate = f.t.timeline[index].getMonth(f.t.timeline[index].date [1])  + " " + f.t.timeline[index].date [2] + ", " + change;
+					f.t.timeline[index].recordChange ("Time", "date", newDate);
+					f.t.timeline[index].date [0] += change;
 				}
 			}
 				
 		} else if (data == 2) { //print (index + " consequences");//consequences
 			
-			mutateConsequences (t, index);
+			mutateConsequences (f, index);
 
 		} else if (data == 3) { //print (index + " name");//name
 
 			//Needs last word to be the one it will edit
-			int spaceIndex = t[index].name.LastIndexOf(' ');
-			string newName = t[index].name.Substring(0,spaceIndex+1);
+			int spaceIndex = f.t.timeline[index].name.LastIndexOf(' ');
+			string newName = f.t.timeline[index].name.Substring(0,spaceIndex+1);
 			newName += RandomString (Random.Range (5, 10));
 
-			t [index].recordChange ("Time", "name", newName); 
+			f.t.timeline[index].recordChange ("Time", "name", newName); 
 
 		} else if (data == 4) { //print (index + " importance");//importance
 
@@ -225,31 +242,34 @@ public class GameScript : MonoBehaviour{
 				amount = -1;
 			}
 
-			int newImportance = t [index].importance + amount;
-			t [index].recordChange ("Time", "importance", newImportance.ToString());
+			int newImportance = f.t.timeline[index].importance + amount;
+			f.t.timeline[index].recordChange ("Time", "importance", newImportance.ToString());
 
-			t[index].importance += amount;
+			f.t.timeline[index].importance += amount;
 
 		} else if (data == 5) { //print (index + " recorded");//recorded
-			t[index].removeRandomRecording("Time"); //change recording is handled inside this function
+			f.t.timeline[index].removeRandomRecording("Time"); //change recording is handled inside this function
 
 		}
 
 	}
 
 	//V1 of mutating consequences
-	void mutateConsequences(List<Event> t, int index){
-		int change = Random.Range(0, t[index].participants.Count);
-		string[] part = new string[t[index].participants.Count]; //make an array, the length of participants
-		t [index].participants.Keys.CopyTo (part, 0); //put the keys in this array
+	void mutateConsequences(Faction f, int index){
+		int change = Random.Range(0, f.t.timeline[index].participants.Count);
+		string[] part = new string[f.t.timeline[index].participants.Count]; //make an array, the length of participants
+		f.t.timeline [index].participants.Keys.CopyTo (part, 0); //put the keys in this array
 		string oldPart = part[change];
 
 		int amount = 1;
 		if(Random.Range(0,1) == 1){
 			amount = -1;
 		}
-		int newAmount = t [index].participants [oldPart] + amount;
-		t [index].recordChange ("Time", "consequences", newAmount.ToString(), oldPart);
+		int newAmount = f.t.timeline [index].participants [oldPart] + amount;
+		f.t.timeline [index].recordChange ("Time", "consequences", newAmount.ToString(), oldPart);
+
+		//Update faction's affinity
+		f.updateFactionAffinity(oldPart);
 	}
 
 	//Faction functions that require access to all factions ------------------------------------------------------------------------------------------

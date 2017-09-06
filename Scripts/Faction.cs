@@ -167,23 +167,38 @@ public class Faction : Helper {
 	//When an event in added to the timeline, any participants involved are added to eventListing at this index
 	public void addEvent(Event e, int i){ //if a value isn't entered, default should be the end of the timeline this will be added at
 		foreach (KeyValuePair<string, int> p in e.participants){
-			if (eventListing.ContainsKey (p.Key)) {
-				eventListing [p.Key].Add (i); //store in eventlisting the faction is mentioned at this index in the timeline
-			} else {
-				List<int> indices = new List<int> ();
-				indices.Add (i);
-				eventListing.Add (p.Key, indices);
-			}
+			addParticipant (p.Key, p.Value);
 		}
 		if(i > t.timeline.Count) t.timeline.Add (e); //if event is listing itself beyond where timeline exists, event should go in that spot
 	}
 
+	//Removes participant from that listing in eventListing
+	public void removeParticipant(string name, int index){
+		for (int i = 0; i < eventListing.Count; i++) {
+			if (eventListing [name][i] == index) {
+				eventListing [name].Remove (i); 
+				break;
+			}
+		}
+	}
+
+	//Adds an entry of a participant at an event in eventListing
+	public void addParticipant(string name, int index){
+		if (eventListing.ContainsKey (name)) {
+			eventListing [name].Add (index); //store in eventlisting the faction is mentioned at this index in the timeline
+		} else {
+			List<int> indices = new List<int> ();
+			indices.Add (index);
+			eventListing.Add (name, indices);
+		}
+	}
+
 	//returns Affinity for a faction from that event
-	public float CalculateYourAffinities(int importance, int eventType){
-		if (eventType == 0) {
-			return importance;
+	public float CalculateAffinity(int importance, int eventType, int consequence){
+		if (eventType == 0) { //if historical
+			return importance * consequence;
 		} else { // if (eventType == 1) { //in case more than two types exist later
-			return importance * mythValue;
+			return importance * consequence * mythValue;
 		}
 	}
 
@@ -197,10 +212,10 @@ public class Faction : Helper {
 			foreach (KeyValuePair<string, int> p in t.timeline[i].participants){
 				if (knownFactions.ContainsKey(p.Key)) { //Check if participant is already in nkf
 					float value = knownFactions [p.Key]; //get value stored in nkf mapped to that participant
-					value += CalculateYourAffinities (t.timeline [i].importance, p.Value);
+					value += CalculateAffinity (t.timeline [i].importance, t.timeline[i].type, p.Value);
 					knownFactions[p.Key] += value;
 				} else { //this should never fire now that knownFactions gets setup, but doesn't hurt to leave it in
-					float value = CalculateYourAffinities(t.timeline[i].importance, p.Value);
+					float value = CalculateAffinity (t.timeline [i].importance, t.timeline[i].type, p.Value);
 					knownFactions.Add (p.Key, value);
 				}
 			}
@@ -208,11 +223,14 @@ public class Faction : Helper {
 	}
 
 	//Should step through all occurences of the changedFaction in the timeline and recalculate this faction's affinity towards the changedFaction
-	/*public void updateFactionAffinity(string changedFaction){
-		int affinity = 0;
-		for (int i = 0; i < eventListing [changedFaction]; i++) {
+	public void updateFactionAffinity(string changedFaction){
+		float affinity = 0;
 
+		for (int i = 0; i < eventListing [changedFaction].Count; i++) {
+			Debug.Log ("looking for: " + changedFaction+"\n Participants:"+SDtoString<string,int>(t.timeline[eventListing[changedFaction][i]].participants));
+			affinity += CalculateAffinity(t.timeline [eventListing [changedFaction] [i]].importance, 
+				t.timeline [eventListing [changedFaction] [i]].type, t.timeline [eventListing [changedFaction] [i]].participants [changedFaction]);
 		}
-	}*/
+	}
 
 }

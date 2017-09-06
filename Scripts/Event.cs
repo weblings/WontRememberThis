@@ -133,13 +133,6 @@ public class Event : Helper{
 
 		if (thingChanged == "participants") {
 			oldData = key;
-			int value = participants [key];
-			participants.Remove (key);
-			if(participants.ContainsKey(change)){
-				participants[change] = value;
-			}else{
-				participants.Add (change, value);
-			}
 		} else if (thingChanged == "consequences") {
 			oldData = participants [key].ToString();
 			participants [key] = int.Parse(change);
