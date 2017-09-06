@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Event{
-	public List<string> participants; //those involved
+public class Event : Helper{
+	public SortedDictionary<string,int> participants; //those involved : consequences of involvement
 	public List<int> date; //Y,M,D (most likely to be altered)
-	public List<int> consequences; //represent buffs/debuffs for participants
 	public string name; //name of event
 	public int importance; //importance of event (need to figure out ordering)
 	public List<string> records; //location of recording. More records -> better protection of event
@@ -14,9 +13,10 @@ public class Event{
 
 	//Constructor -----------------------------------------------------------------------------------------------------------------------
 	public Event(List<string> _participants, List<int> _date, List<int> _consequences, string _name, int _importance){
-		participants = _participants;
+		//participants = createParticipants(_participants, _consequences);
+		participants = new SortedDictionary<string, int> ();
+		createParticipants(_participants, _consequences);
 		date = _date;
-		consequences = _consequences;
 		name = _name;
 		importance = _importance;
 		records = new List<string> ();
@@ -25,9 +25,8 @@ public class Event{
 	}
 
 	public Event(List<string> _participants, List<int> _date, List<int> _consequences, string _name, int _importance, int _type){
-		participants = _participants;
-		date = _date;
-		consequences = _consequences;
+		participants = new SortedDictionary<string, int> ();
+		createParticipants(_participants, _consequences);		date = _date;
 		name = _name;
 		importance = _importance;
 		records = new List<string> ();
@@ -36,9 +35,8 @@ public class Event{
 	}
 
 	public Event(List<string> _participants, List<int> _date, List<int> _consequences, string _name, int _importance, List<string> _records){
-		participants = _participants;
-		date = _date;
-		consequences = _consequences;
+		participants = new SortedDictionary<string, int> ();
+		createParticipants(_participants, _consequences);		date = _date;
 		name = _name;
 		importance = _importance;
 		records = _records;
@@ -47,9 +45,9 @@ public class Event{
 	}
 
 	public Event(List<string> _participants, List<int> _date, List<int> _consequences, string _name, int _importance, List<string> _records, int _type){
-		participants = _participants;
+		participants = new SortedDictionary<string, int> ();
+		createParticipants(_participants, _consequences);
 		date = _date;
-		consequences = _consequences;
 		name = _name;
 		importance = _importance;
 		records = _records;
@@ -58,13 +56,31 @@ public class Event{
 	}
 
 	//functions -------------------------------------------------------------------------------------------------------------------------
+
+	//contructor helper function
+	void createParticipants(List<string> p, List<int> c){
+		string[] p2 = new string[p.Count];
+		p.CopyTo(p2);
+		int[] c2 = new int[c.Count];
+		c.CopyTo(c2);
+
+		for (int i = 0; i < p.Count; i++) {
+			if (participants.ContainsKey (p2 [i])) {
+				Debug.Log(ArrayToString<string>(p2));
+				Debug.Log (p2 [i]);
+				Debug.Log (SDtoString<string,int> (participants));
+			}
+			participants.Add (p2 [i], c2 [i]);
+		}
+		//return part;
+	}
+
+
+	//returns Event represented as a string
 	public string toString(){
 		string output = "{Event: " + name + ", Date: " + getMonth(date [1]) + " " + date [2] + ", " + date [0] + " Importance: " + importance;
-		output+= ", Participants/Consequences: ";
-		for (int i = 0; i < participants.Count; i++) {
-			output += participants [i]+"/"+consequences[i];
-			if (i + 1 != participants.Count) output += ", ";
-		}
+		output+= ", Participants:Consequences : ";
+		output += SDtoString<string,int> (participants);
 		output += ",\n(Changes: ";
 		for (int i = 0; i < changes.Count; i++) {
 			output += changes [i];
@@ -81,45 +97,60 @@ public class Event{
 	}
 
 	//recordChange() functions---------------------------------------------------------------------
-	//Puts any change in the list of changes
+	//Puts any change in the list of changes (this is for lists)
 	public void recordChange(string ChangerID, string thingChanged, int index, string change){
 		string oldData = "";
 
-		if (thingChanged == "participants") {
-			oldData = participants [index];
-		} else if (thingChanged == "date") {
+		if (thingChanged == "date") {
 			oldData = dateToString ();
-		} else if (thingChanged == "consequences") {
-			oldData = consequences [index].ToString ();
 		} else if (thingChanged == "records") {
 			oldData = records [index];
 		}
 
 		string toLog = ChangerID + " changed " +thingChanged+": "+ oldData + " -> " + change;
 		changes.Add (toLog);
-		if (changes.Count >= 3) {
-			type = 1; //If 3 or more changes -> myth
-		}
+		mythCheck ();
 	}
 
-	//Puts any change in the list of changes
+	//Puts any change in the list of changes (this is for single variables)
 	public void recordChange(string ChangerID, string thingChanged, string change){
 		string oldData = "";
 
 		if (thingChanged == "name") {
 			oldData = name;
 		} else if (thingChanged == "importance") {
-			oldData = importance.ToString();
+			oldData = importance.ToString ();
+		} 
+
+		string toLog = ChangerID + " changed "+thingChanged+": " + oldData + " -> " + change;
+		changes.Add (toLog);
+		mythCheck ();
+	}
+
+	//Puts any change in the list of changes (this is for dictionaries)
+	public void recordChange(string ChangerID, string thingChanged, string change, string key){
+		string oldData = "";
+
+		if (thingChanged == "participants") {
+			oldData = key;
+			int value = participants [key];
+			participants.Remove (key);
+			if(participants.ContainsKey(change)){
+				participants[change] = value;
+			}else{
+				participants.Add (change, value);
+			}
+		} else if (thingChanged == "consequences") {
+			oldData = participants [key].ToString();
+			participants [key] = int.Parse(change);
 		}
 
 		string toLog = ChangerID + " changed "+thingChanged+": " + oldData + " -> " + change;
 		changes.Add (toLog);
-		if (changes.Count >= 3) {
-			type = 1; //If 3 or more changes -> myth
-		}
+		mythCheck ();
 	}
 
-	public void makeMythical(){
+	public void mythCheck(){
 		if (changes.Count >= 3) {
 			type = 1; //made mythical
 		}

@@ -8,6 +8,8 @@ public class GameScript : MonoBehaviour{
 	public List<string> factionNames; //probably will get rid of this after testing
 	//public Timeline t;
 	SortedDictionary<string,City> cities;
+	Helper h = new Helper();
+
 	public int year; //current year
 	public int month;
 
@@ -36,14 +38,17 @@ public class GameScript : MonoBehaviour{
 			Faction f = new Faction(factionName,newCityName,t,factionNames);
 			factions.Add (f);
 			f.updateAllAffinities ();
+			f.updateAllEventListings ();
 			print(f.toString ());
 		}
 
 		setupFactionsPerceptions ();
-		for (int i = 0; i < factions.Count; i++) {
-			print(factions [i].SDtoString<string,float> (factions [i].factionsPerceptions));
-		}
-
+		//for (int i = 0; i < factions.Count; i++) {
+			//print(factions [i].SDtoString<string,float> (factions [i].factionsPerceptions));
+			//print(factions[i].SDListValuetoString<string,int>(factions[i].eventListing));
+		//`}
+		int index = Random.Range (0, factions.Count);
+		mutate (factions [index].t.timeline);
 		InvokeRepeating ("Time", 0f, 2f); //2f might be good for normal gamerate
 	}
 
@@ -85,10 +90,21 @@ public class GameScript : MonoBehaviour{
 		for (int i = 0; i < partsMax; i++) {
 			string newPart = factionNames [Random.Range (0, factionNames.Count)];
 
-			//Checks if it is going to add a faction already in the list, if so: break
-			if (parts.BinarySearch (newPart) >= 0)	break; 
-			parts.Add (newPart);
-			cons.Add(Random.Range(-3,3));
+			//parts.BinarySearch(newPart); BinarySearch does not work if list is not sorted, sorting + BinarySearch = O((n+1)logn)
+			//so literally doing O(n) dumb search is faster (length <= 5 anyway but still)
+
+			//Checks if it is going to add a faction already in the list, if so: say a duplicate has been found and break from further searching
+			bool same = false;
+			for (int j = 0; j < parts.Count; j++) {
+				if (parts [j].Equals (newPart)) {
+					same = true;
+					break;
+				}
+			}
+			if (!same) {
+				parts.Add (newPart);
+				cons.Add (Random.Range (-3, 3));
+			}
 		}
 		List<int> date = new List<int> (new int[]{ Random.Range (0, 1500), Random.Range (1, 12), Random.Range (1, 30) });
 		string name = "Battle of the " + RandomString (Random.Range (3, 8));
@@ -137,15 +153,17 @@ public class GameScript : MonoBehaviour{
 
 		if (data == 0) { //print (index + " participants");//participants 
 
-			int change = Random.Range(0, t[index].participants.Count-1);
+			int change = Random.Range(0, t[index].participants.Count);
+			string[] part = new string[t[index].participants.Count]; //make an array, the length of participants
+			t [index].participants.Keys.CopyTo (part, 0); //put the keys in this array
+			string oldPart = part[change];
 
 			//Change participants to a random faction
-			int randFact = Random.Range (0, factions.Count - 1);
+			int randFact = Random.Range (0, factions.Count);
 			string partChange = factions [randFact].name;
 
 			//Log the participants getting changed
-			t[index].recordChange ("Time", "participants", change, partChange);
-			t[index].participants [change] = factions[randFact].name;
+			t[index].recordChange ("Time", "participants", partChange, oldPart);
 		
 		} else if (data == 1) { //print (index + " date");//date
 			int change = Random.Range(0,100);
@@ -189,16 +207,8 @@ public class GameScript : MonoBehaviour{
 				
 		} else if (data == 2) { //print (index + " consequences");//consequences
 			
-			int length = t[index].consequences.Count;
-			int change = Random.Range (0, length);
-			int amount = 1;
-			if(Random.Range(0,1) == 1){
-				amount = -1;
-			}
-			int newAmount = t [index].consequences [change] + amount;
-			t [index].recordChange ("Time", "consequences", change, newAmount.ToString());
-			t[index].consequences [change] = newAmount;
-		
+			mutateConsequences (t, index);
+
 		} else if (data == 3) { //print (index + " name");//name
 
 			//Needs last word to be the one it will edit
@@ -227,6 +237,23 @@ public class GameScript : MonoBehaviour{
 
 	}
 
+	//V1 of mutating consequences
+	void mutateConsequences(List<Event> t, int index){
+		int change = Random.Range(0, t[index].participants.Count);
+		string[] part = new string[t[index].participants.Count]; //make an array, the length of participants
+		t [index].participants.Keys.CopyTo (part, 0); //put the keys in this array
+		string oldPart = part[change];
+
+		int amount = 1;
+		if(Random.Range(0,1) == 1){
+			amount = -1;
+		}
+		int newAmount = t [index].participants [oldPart] + amount;
+		t [index].recordChange ("Time", "consequences", newAmount.ToString(), oldPart);
+	}
+
+	//Faction functions that require access to all factions ------------------------------------------------------------------------------------------
+
 	//faction perceptions
 	void setupFactionsPerceptions(){
 		//Need a dictionary to keep this runtime down TODO: replace List<Faction> factions with this
@@ -237,8 +264,12 @@ public class GameScript : MonoBehaviour{
 		}
 
 		for (int i = 0; i < factions.Count; i++){
+
 			foreach (KeyValuePair<string, bool> k in factions[i].discoveredFactions){
-				//print (i + ". " + factions [i].name + ": " + k.Key); Keeping this because there is a weird null ptr error very occasionally
+				//Keeping this because there used to be a null ptr error. Fixed now, but if it breaks in the future these will be handy
+				if(!f.ContainsKey(k.Key)) print(k.Key+" is not in factions");
+				if(!f[k.Key].knownFactions.ContainsKey(factions[i].name)) print(factions[i].name+" is not in faction: "+k.Key+"\'s knownFactions");
+
 				factions [i].factionsPerceptions.Add ( k.Key, f[k.Key].knownFactions [factions[i].name]);
 			}
 		}

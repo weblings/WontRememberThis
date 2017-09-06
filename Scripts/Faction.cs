@@ -13,6 +13,7 @@ public class Faction : Helper {
 	public SortedDictionary<string,float> knownFactions; //stores factionsKnown and the positive/negative feeling this faction feels towards them
 	public SortedDictionary<string,bool> discoveredFactions; //whether this faction has encountered other faction themselves
 	public SortedDictionary<string, float> factionsPerceptions; //record of what other factions think of this faction
+	public SortedDictionary<string, List<int>> eventListing; //keeps list of what events in timeline contain a faction (for fast lookup later)
 	float mythValue; //how much myths are worth to this faction
 
 	//constructors ---------------------------------------------------
@@ -26,11 +27,12 @@ public class Faction : Helper {
 		resource.Add ("gold", 500);
 		cities = new List<string> ();
 		knownFactions = new SortedDictionary<string, float> ();
-		knownFactions.Add (name, 5f); //abritrarily starting with 5 (subject to change)
+		setupKnownFactions (factionNames);
 		mythValue = .7f;
 		discoveredFactions = new SortedDictionary<string, bool> ();
 		setupDiscoveredFactions (factionNames);
 		factionsPerceptions = new SortedDictionary<string, float> ();
+		eventListing = new SortedDictionary<string, List<int>> (); 
 	}
 
 	public Faction(string _name, Timeline _t, List<string> factionNames){
@@ -43,11 +45,12 @@ public class Faction : Helper {
 		resource.Add ("gold", 500);
 		cities = new List<string> ();
 		knownFactions = new SortedDictionary<string, float> ();
-		knownFactions.Add (name, 5f); //abritrarily starting with 5 (subject to change)
+		setupKnownFactions (factionNames);
 		mythValue = .7f;
 		discoveredFactions = new SortedDictionary<string, bool> ();
 		setupDiscoveredFactions (factionNames);
 		factionsPerceptions = new SortedDictionary<string, float> ();
+		eventListing = new SortedDictionary<string, List<int>> (); 
 	}
 
 	public Faction(string _name, string startingCity, Timeline _t, List<string> factionNames){
@@ -61,11 +64,12 @@ public class Faction : Helper {
 		cities = new List<string> ();
 		cities.Add (startingCity);
 		knownFactions = new SortedDictionary<string, float> ();
-		knownFactions.Add (name, 5f); //abritrarily starting with 5 (subject to change)
+		setupKnownFactions (factionNames);
 		mythValue = .7f;
 		discoveredFactions = new SortedDictionary<string, bool> ();
 		setupDiscoveredFactions (factionNames);
 		factionsPerceptions = new SortedDictionary<string, float> ();
+		eventListing = new SortedDictionary<string, List<int>> (); 
 	}
 
 	public Faction(string _name, List<string> _cities, Timeline _t, List<string> factionNames){
@@ -78,11 +82,12 @@ public class Faction : Helper {
 		resource.Add ("gold", 500);
 		cities = _cities;
 		knownFactions = new SortedDictionary<string, float> ();
-		knownFactions.Add (name, 5f); //abritrarily starting with 5 (subject to change)
+		setupKnownFactions (factionNames);
 		mythValue = .7f;
 		discoveredFactions = new SortedDictionary<string, bool> ();
 		setupDiscoveredFactions (factionNames);
 		factionsPerceptions = new SortedDictionary<string, float> ();
+		eventListing = new SortedDictionary<string, List<int>> (); 
 	}
 
 	//print functions ------------------------------------------------------
@@ -108,7 +113,15 @@ public class Faction : Helper {
 			techTree.Add (techs [i], false);
 		}
 	}
-		
+
+	//initializes knownFactions with placholder values to prevent null ptr errors later
+	public void setupKnownFactions(List<string> factionNames){
+		for (int i = 0; i < factionNames.Count; i++) {
+			if (factionNames [i].Equals (name))	knownFactions.Add (name, 5);
+			else knownFactions.Add (factionNames [i], 0);
+		}
+	}
+
 	//Currently makes a single faction known at the beginning
 	public void setupDiscoveredFactions(List<string> factions){
 
@@ -144,6 +157,27 @@ public class Faction : Helper {
 		AvgPerception /= divisor;
 	}
 
+	//begins list of where factions are described in timeline
+	public void updateAllEventListings(){
+		for (int i = 0; i < t.timeline.Count; i++) {
+			addEvent (t.timeline [i], i);
+		}
+	}
+
+	//When an event in added to the timeline, any participants involved are added to eventListing at this index
+	public void addEvent(Event e, int i){ //if a value isn't entered, default should be the end of the timeline this will be added at
+		foreach (KeyValuePair<string, int> p in e.participants){
+			if (eventListing.ContainsKey (p.Key)) {
+				eventListing [p.Key].Add (i); //store in eventlisting the faction is mentioned at this index in the timeline
+			} else {
+				List<int> indices = new List<int> ();
+				indices.Add (i);
+				eventListing.Add (p.Key, indices);
+			}
+		}
+		if(i > t.timeline.Count) t.timeline.Add (e); //if event is listing itself beyond where timeline exists, event should go in that spot
+	}
+
 	//returns Affinity for a faction from that event
 	public float CalculateYourAffinities(int importance, int eventType){
 		if (eventType == 0) {
@@ -156,23 +190,29 @@ public class Faction : Helper {
 	//Will step through the whole timeline and replace knownFactions with the new SortedDictionary
 	public void updateAllAffinities(){
 
-		SortedDictionary<string,float> nkf = new SortedDictionary<string, float> (); //"new knownFactions"
-		nkf.Add (name, 5);
+		//SortedDictionary<string,float> nkf = new SortedDictionary<string, float> (); //"new knownFactions"
+		//nkf.Add (name, 5);
 
 		for (int i = 0; i < t.timeline.Count; i++) { //Step through timeline
-			for(int j=0; j < t.timeline[i].participants.Count; j++){ //Step through participants in an event
-				if (nkf.ContainsKey (t.timeline [i].participants [j])) { //Check if participant is already in nkf
-					float value = nkf [t.timeline [i].participants [j]]; //get value stored in nkf mapped to that participant
-					value += CalculateYourAffinities (t.timeline [i].importance, t.timeline [i].consequences [j]);
-					nkf[t.timeline [i].participants [j]] += value;
-				} else {
-					float value = CalculateYourAffinities(t.timeline[i].importance, t.timeline[i].consequences[j]);
-					nkf.Add (t.timeline [i].participants [j], value);
+			foreach (KeyValuePair<string, int> p in t.timeline[i].participants){
+				if (knownFactions.ContainsKey(p.Key)) { //Check if participant is already in nkf
+					float value = knownFactions [p.Key]; //get value stored in nkf mapped to that participant
+					value += CalculateYourAffinities (t.timeline [i].importance, p.Value);
+					knownFactions[p.Key] += value;
+				} else { //this should never fire now that knownFactions gets setup, but doesn't hurt to leave it in
+					float value = CalculateYourAffinities(t.timeline[i].importance, p.Value);
+					knownFactions.Add (p.Key, value);
 				}
 			}
 		}
-
-		knownFactions = nkf;
 	}
+
+	//Should step through all occurences of the changedFaction in the timeline and recalculate this faction's affinity towards the changedFaction
+	/*public void updateFactionAffinity(string changedFaction){
+		int affinity = 0;
+		for (int i = 0; i < eventListing [changedFaction]; i++) {
+
+		}
+	}*/
 
 }
