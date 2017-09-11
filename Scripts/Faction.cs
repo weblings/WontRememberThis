@@ -149,6 +149,8 @@ public class Faction : Helper {
 		int divisor = 0;
 		AvgPerception = 0; //reset AvgPerception
 		foreach (KeyValuePair<string, float> fp in factionsPerceptions) {
+			Debug.Log ("AVG: "+name+"'s factionPerceptions: " + SDtoString<string,float> (factionsPerceptions));
+			//Debug.Log ("Looking for: " + fp.Key);
 			if (discoveredFactions [fp.Key]) {
 				AvgPerception += fp.Value;
 				divisor++;
@@ -167,14 +169,16 @@ public class Faction : Helper {
 	//When an event in added to the timeline, any participants involved are added to eventListing at this index
 	public void addEvent(Event e, int i){ //if a value isn't entered, default should be the end of the timeline this will be added at
 		foreach (KeyValuePair<string, int> p in e.participants){
-			addParticipant (p.Key, p.Value);
+			addParticipant (p.Key, i);
 		}
 		if(i > t.timeline.Count) t.timeline.Add (e); //if event is listing itself beyond where timeline exists, event should go in that spot
 	}
 
 	//Removes participant from that listing in eventListing
 	public void removeParticipant(string name, int index){
-		for (int i = 0; i < eventListing.Count; i++) {
+		Debug.Log (name + ": " + ListToString<int>(eventListing[name])+", Looking for: "+index);
+		for (int i = 0; i < eventListing[name].Count; i++) {
+			Debug.Log (i);
 			if (eventListing [name][i] == index) {
 				eventListing [name].Remove (i); 
 				break;
@@ -202,11 +206,8 @@ public class Faction : Helper {
 		}
 	}
 
-	//Will step through the whole timeline and replace knownFactions with the new SortedDictionary
+	//Will step through the whole timeline and update knownFactions
 	public void updateAllAffinities(){
-
-		//SortedDictionary<string,float> nkf = new SortedDictionary<string, float> (); //"new knownFactions"
-		//nkf.Add (name, 5);
 
 		for (int i = 0; i < t.timeline.Count; i++) { //Step through timeline
 			foreach (KeyValuePair<string, int> p in t.timeline[i].participants){
@@ -226,11 +227,23 @@ public class Faction : Helper {
 	public void updateFactionAffinity(string changedFaction){
 		float affinity = 0;
 
-		for (int i = 0; i < eventListing [changedFaction].Count; i++) {
-			Debug.Log ("looking for: " + changedFaction+"\n Participants:"+SDtoString<string,int>(t.timeline[eventListing[changedFaction][i]].participants));
-			affinity += CalculateAffinity(t.timeline [eventListing [changedFaction] [i]].importance, 
-				t.timeline [eventListing [changedFaction] [i]].type, t.timeline [eventListing [changedFaction] [i]].participants [changedFaction]);
+		//Debug.Log("eventListing: "+SDListValuetoString<string,int>(eventListing));
+		if (!eventListing.ContainsKey (changedFaction)) { //Was having key not present error
+			Debug.Log (changedFaction + " not present in eventListing");
+			return;
 		}
+
+		for (int i = 0; i < eventListing [changedFaction].Count; i++) {
+			//Debug.Log ("looking for: " + changedFaction+"\n Participants:"+SDtoString<string,int>(t.timeline[eventListing[changedFaction][i]].participants));
+			if (t.timeline [eventListing [changedFaction] [i]].participants.ContainsKey (changedFaction)) {
+				affinity += CalculateAffinity (t.timeline [eventListing [changedFaction] [i]].importance, 
+					t.timeline [eventListing [changedFaction] [i]].type, t.timeline [eventListing [changedFaction] [i]].participants [changedFaction]);
+			}
+		}
+
+		//Debug.Log (name + "'s new affinity for " + changedFaction + ": " + knownFactions [changedFaction] + " -> " + affinity);
+
+		knownFactions [changedFaction] = affinity;
 	}
 
 }

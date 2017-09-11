@@ -8,7 +8,7 @@ public class GameScript : MonoBehaviour{
 	public List<string> factionNames; //probably will get rid of this after testing
 	//public Timeline t;
 	SortedDictionary<string,City> cities;
-	Helper h = new Helper();
+	public Helper h = new Helper();
 
 	public int year; //current year
 	public int month;
@@ -39,7 +39,7 @@ public class GameScript : MonoBehaviour{
 			factions.Add (f);
 			f.updateAllAffinities ();
 			f.updateAllEventListings ();
-			print(f.toString ());
+			//print(f.toString ());
 		}
 
 		setupFactionsPerceptions ();
@@ -63,20 +63,20 @@ public class GameScript : MonoBehaviour{
 		if (Random.Range (0, 4) == 0) {
 			int index = Random.Range (0, factions.Count);
 			mutate (factions [index]);
-			print (factions [index].name + " hit!");
+			//print (factions [index].name + " hit!");
 			//print (factions [index].t.toString ());
-			print(factions[index].name+"\'s knownFactions: "+h.SDtoString<string,float>(factions[index].knownFactions));
+			//print(factions[index].name+"\'s knownFactions: "+h.SDtoString<string,float>(factions[index].knownFactions));
 		}
 
 		//handle years
 		if (month == 1) {
 			//possibility of all player's timelines getting hit each year
 			if(Random.Range(0,2) == 0){
-				print ("ALL FACTIONS HIT!");
+				//print ("ALL FACTIONS HIT!");
 				for (int i = 0; i < factions.Count; i++) {
-					print (factions [i].name + " hit!");
+					//print (factions [i].name + " hit!");
 					mutate (factions[i]);
-					print(factions[i].t.toString());
+					//print(factions[i].t.toString());
 				}
 			}
 			year++;
@@ -270,11 +270,12 @@ public class GameScript : MonoBehaviour{
 
 		//Update faction's affinity
 		f.updateFactionAffinity(oldPart);
+		updateFactionsPerceptions (f.name, oldPart);
 	}
 
 	//Faction functions that require access to all factions ------------------------------------------------------------------------------------------
 
-	//faction perceptions
+	//Creates initial faction perceptions
 	void setupFactionsPerceptions(){
 		//Need a dictionary to keep this runtime down TODO: replace List<Faction> factions with this
 		SortedDictionary<string,Faction> f = new SortedDictionary<string, Faction> ();
@@ -285,18 +286,48 @@ public class GameScript : MonoBehaviour{
 
 		for (int i = 0; i < factions.Count; i++){
 
+			//print (factions [i].name + "discovered factions: " + h.SDtoString<string,bool> (factions [i].discoveredFactions));
+
 			foreach (KeyValuePair<string, bool> k in factions[i].discoveredFactions){
 				//Keeping this because there used to be a null ptr error. Fixed now, but if it breaks in the future these will be handy
 				if(!f.ContainsKey(k.Key)) print(k.Key+" is not in factions");
 				if(!f[k.Key].knownFactions.ContainsKey(factions[i].name)) print(factions[i].name+" is not in faction: "+k.Key+"\'s knownFactions");
 
-				factions [i].factionsPerceptions.Add ( k.Key, f[k.Key].knownFactions [factions[i].name]);
+				float perception = f [k.Key].knownFactions [factions [i].name];
+				factions [i].factionsPerceptions.Add ( k.Key, perception);
 			}
 		}
 
 		for (int i = 0; i < factions.Count; i++) {
 			factions [i].updateAvgPerception ();
-			print (factions[i].name + ": " + factions [i].AvgPerception);
+			Debug.Log ("SETUP: "+factions[i].name+"'s factionsPerceptions: " + h.SDtoString<string,float> (factions[i].factionsPerceptions));
+			//print (factions[i].name + ": " + factions [i].AvgPerception);
+		}
+		Debug.Log ("FINISHED SETUP");
+	}
+
+	//For when a faction changes its view on another faction
+	void updateFactionsPerceptions(string faction, string factionWithNewPerception){
+		//Need a dictionary to keep this runtime down TODO: replace List<Faction> factions with this
+		SortedDictionary<string,Faction> f = new SortedDictionary<string, Faction> ();
+
+		for (int i = 0; i < factions.Count; i++) {
+			f.Add (factions [i].name, factions [i]);
+		}
+
+		foreach (KeyValuePair<string, Faction> curF in f){
+			//Keeping this because there used to be a null ptr error. Fixed now, but if it breaks in the future these will be handy
+			if(!f.ContainsKey(curF.Key)) print(curF.Key+" is not in factions");
+			if (!f [curF.Key].knownFactions.ContainsKey (factionWithNewPerception)) {
+				print (factionWithNewPerception + " is not in faction: " + curF + "\'s knownFactions");
+			}
+
+			f[curF.Key].factionsPerceptions[factionWithNewPerception] = f[faction].knownFactions[factionWithNewPerception];
+		}
+
+		for (int i = 0; i < factions.Count; i++) {
+			factions [i].updateAvgPerception ();
+			//print (factions[i].name + ": " + factions [i].AvgPerception);
 		}
 	}
 
