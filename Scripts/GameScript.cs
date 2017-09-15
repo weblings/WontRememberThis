@@ -63,8 +63,8 @@ public class GameScript : MonoBehaviour{
 		if (Random.Range (0, 4) == 0) {
 			int index = Random.Range (0, factions.Count);
 			mutate (factions [index]);
-			//print (factions [index].name + " hit!");
-			//print (factions [index].t.toString ());
+			print (factions [index].name + " hit!");
+			print (factions [index].t.toString ());
 			//print(factions[index].name+"\'s knownFactions: "+h.SDtoString<string,float>(factions[index].knownFactions));
 		}
 
@@ -72,11 +72,11 @@ public class GameScript : MonoBehaviour{
 		if (month == 1) {
 			//possibility of all player's timelines getting hit each year
 			if(Random.Range(0,2) == 0){
-				//print ("ALL FACTIONS HIT!");
+				print ("ALL FACTIONS HIT!");
 				for (int i = 0; i < factions.Count; i++) {
-					//print (factions [i].name + " hit!");
+					print (factions [i].name + " hit!");
 					mutate (factions[i]);
-					//print(factions[i].t.toString());
+					print(factions[i].t.toString());
 				}
 			}
 			year++;

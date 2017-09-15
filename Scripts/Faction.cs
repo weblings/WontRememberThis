@@ -146,10 +146,14 @@ public class Faction : Helper {
 
 	//updates AvgPerception with how other factions feel about that faction
 	public void updateAvgPerception(){
-		int divisor = 0;
+		float divisor = 0;
 		AvgPerception = 0; //reset AvgPerception
+
+		//Temporary fix. factionsPerceptions keeps adding itself to the list somewhere
+		if (factionsPerceptions.ContainsKey (name))	factionsPerceptions.Remove (name);
+
 		foreach (KeyValuePair<string, float> fp in factionsPerceptions) {
-			Debug.Log ("AVG: "+name+"'s factionPerceptions: " + SDtoString<string,float> (factionsPerceptions));
+			//Debug.Log ("AVG: "+name+"'s factionPerceptions: " + SDtoString<string,float> (factionsPerceptions));
 			//Debug.Log ("Looking for: " + fp.Key);
 			if (discoveredFactions [fp.Key]) {
 				AvgPerception += fp.Value;
